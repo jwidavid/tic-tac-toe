@@ -2,13 +2,17 @@ let grid;
 
 class Grid {
 
-	constructor( tileSize ) {
-		this.canvas    = undefined;
-		this.ctx       = undefined;
-		this.tileSize  = tileSize ? tileSize * window.devicePixelRatio : 160 * window.devicePixelRatio;
-		this.cellsWide = 3;
-		this.cellsTall = 3;
-		this.winLength = 3;
+	/**
+	 * Game grid constructor with game setting arguments
+	 * 
+	 * @param {num} cellsWide 
+	 * @param {num} cellsTall 
+	 * @param {num} winLength 
+	 */
+	constructor( cellsWide, cellsTall, winLength ) {
+		this.cellsWide = cellsWide ? cellsWide : 5;
+		this.cellsTall = cellsTall ? cellsTall : 5;
+		this.winLength = winLength ? winLength : 5;
 	}
 
 	/**
@@ -17,6 +21,7 @@ class Grid {
 	init() {
 		// Set our config variables
 		this.canvas              = document.getElementById( 'gameCanvas' );
+		this.tileSize            = Math.round( this.canvas.width / this.cellsWide ) * window.devicePixelRatio;
 		this.canvas.width        = this.tileSize * this.cellsWide;
 		this.canvas.height       = this.tileSize * this.cellsTall;
 		this.canvas.style.width  = '480px';
@@ -51,7 +56,7 @@ class Grid {
 	 */
 	createGrid() {
 		// our end points
-		const width = this.canvas.width;
+		const width  = this.canvas.width;
 		const height = this.canvas.height;
 	
 		// set our styles
