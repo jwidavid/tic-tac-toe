@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			canvas {
+				background: #f8f8f8;
+				padding: 0;
+				margin: 0 auto;
+				margin-bottom: 1rem;
+				display: block;
+				/* these get replaced, but are helpful as placeholder */
+				width: 480;
+				height: 480;
+			}
+			.container {
+				margin: 40px auto;
+				width: 480px;
+			}
+			.controls {
+				width: 480px;
+			}
+			.controls > p > .success {
+				color: green;
+				font-weight: bold;
+			}
+			.controls > p > .info {
+				color: orange;
+				font-weight: bold;
+			}
+			.controls > p > .danger {
+				color: red;
+				font-weight: bold;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<canvas id="gameCanvas"></canvas>
+			<div class="controls">
+				<p><span id="alerts">Resets the current game</span></p>
+				<button id="reset">Start Over</button>
+			</div>
+		</div>
+		
+		<script src="game.js"></script>
+	</body>
+</html>
