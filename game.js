@@ -4,14 +4,14 @@ class Grid {
 
 	/**
 	 * Game grid constructor with game setting arguments
-	 * 
-	 * @param {num} cellsWide 
-	 * @param {num} cellsTall 
-	 * @param {num} winLength 
+	 *
+	 * @param {num} cellsWide
+	 * @param {num} cellsTall
+	 * @param {num} winLength
 	 */
 	constructor( cellsWide, cellsTall, winLength ) {
-		this.cellsWide = cellsWide ? cellsWide : 5;
-		this.cellsTall = cellsTall ? cellsTall : 5;
+		this.cellsWide = cellsWide ? cellsWide : 3;
+		this.cellsTall = cellsTall ? cellsTall : 3;
 		this.winLength = winLength ? winLength : 3;
 	}
 
@@ -21,9 +21,9 @@ class Grid {
 	init() {
 		// Set our config variables
 		this.canvas              = document.getElementById( 'gameCanvas' );
-		this.tileSize            = Math.round( this.canvas.width / this.cellsWide ) * window.devicePixelRatio;
-		this.canvas.width        = this.tileSize * this.cellsWide;
-		this.canvas.height       = this.tileSize * this.cellsTall;
+		this.cellSize            = Math.round( this.canvas.width / this.cellsWide ) * window.devicePixelRatio;
+		this.canvas.width        = this.cellSize * this.cellsWide;
+		this.canvas.height       = this.cellSize * this.cellsTall;
 		this.canvas.style.width  = '480px';
 		this.canvas.style.height = '480px';
 
@@ -37,7 +37,7 @@ class Grid {
 		this.createGrid();
 
 		/**
-		 * boardState[ xpos ] = [ ypos ] = letter
+		 * boardState[ yPos ] = [ xPos ] = letter
 		 */
 		this.boardState = new Array();
 		this.isGameOver = false;
@@ -52,7 +52,7 @@ class Grid {
 		// our end points
 		const width  = this.canvas.width;
 		const height = this.canvas.height;
-	
+
 		// set our styles
 		this.ctx.save();
 		this.ctx.strokeStyle = 'black'; // line colors
@@ -63,14 +63,14 @@ class Grid {
 
 		// Draw horizontal lines
 		for ( let x=1; x<this.cellsWide; x++ ) {
-			this.ctx.moveTo( 0, this.tileSize * x );
-			this.ctx.lineTo( width, this.tileSize * x );
+			this.ctx.moveTo( 0, this.cellSize * x );
+			this.ctx.lineTo( width, this.cellSize * x );
 		}
 
 		// Draw vertical lines
 		for ( let y=1; y<this.cellsTall; y++ ) {
-			this.ctx.moveTo( this.tileSize * y, 0 );
-			this.ctx.lineTo( this.tileSize * y, height );
+			this.ctx.moveTo( this.cellSize * y, 0 );
+			this.ctx.lineTo( this.cellSize * y, height );
 		}
 
 		this.ctx.stroke();
@@ -85,9 +85,9 @@ class Grid {
 	 * @param {*} cellY
 	 */
 	drawO( cellX, cellY ) {
-		const midX = ( cellX * this.tileSize ) + ( this.tileSize / 2 );
-		const midY = ( cellY * this.tileSize ) + ( this.tileSize / 2 );
-		const radius = this.tileSize / 2.5;
+		const midX = ( cellX * this.cellSize ) + ( this.cellSize / 2 );
+		const midY = ( cellY * this.cellSize ) + ( this.cellSize / 2 );
+		const radius = this.cellSize / 2.5;
 		this.ctx.beginPath();
 		this.ctx.arc( midX, midY, radius, 0, 2 * Math.PI, false );
 		this.ctx.stroke();
@@ -100,14 +100,14 @@ class Grid {
 	 * @param {num} cellY
 	 */
 	drawX( cellX, cellY ) {
-		const x = cellX * this.tileSize;
-		const y = cellY * this.tileSize;
-		const offset = this.tileSize / 10;
+		const x = cellX * this.cellSize;
+		const y = cellY * this.cellSize;
+		const offset = this.cellSize / 10;
 		this.ctx.beginPath();
 		this.ctx.moveTo( x + offset, y + offset );
-		this.ctx.lineTo( x + this.tileSize - offset, y + this.tileSize - offset );
-		this.ctx.moveTo( x + offset, y + this.tileSize - offset );
-		this.ctx.lineTo( x + this.tileSize - offset, y + offset );
+		this.ctx.lineTo( x + this.cellSize - offset, y + this.cellSize - offset );
+		this.ctx.moveTo( x + offset, y + this.cellSize - offset );
+		this.ctx.lineTo( x + this.cellSize - offset, y + offset );
 		this.ctx.stroke();
 	}
 
@@ -133,8 +133,8 @@ class Grid {
 	 */
 	getCellCoords( event ) {
 		const cursor = this.getCursorCoords( event );
-		const posX = Math.floor( cursor.x / this.tileSize );
-		const posY = Math.floor( cursor.y / this.tileSize );
+		const posX = Math.floor( cursor.x / this.cellSize );
+		const posY = Math.floor( cursor.y / this.cellSize );
 
 		return { x: posX, y: posY };
 	}
@@ -147,27 +147,27 @@ class Grid {
 	 * @returns boolean
 	 */
 	isCellEmpty( xPos, yPos ) {
-		return !! this.boardState[ xPos ] && this.boardState[ xPos ][ yPos ];
+		return !! this.boardState[ yPos ] && this.boardState[ yPos ][ xPos ];
 	}
 
 	/**
 	 * Records the move to the boardState
 	 * 
-	 * @param {num} x 
-	 * @param {num} y 
-	 * @param {num} letter 
+	 * @param {num} xPos
+	 * @param {num} yPos
+	 * @param {num} letter
 	 */
 	registerMove( xPos, yPos, letter ) {
-		if ( undefined === this.boardState[ xPos ] ) {
-			this.boardState[ xPos ] = new Array();
+		if ( undefined === this.boardState[ yPos ] ) {
+			this.boardState[ yPos ] = new Array();
 		}
-		this.boardState[ xPos ][ yPos ] = letter;
+		this.boardState[ yPos ][ xPos ] = letter;
 		this.latestMove = { 'x': xPos, 'y': yPos, 'letter': letter };
 		this.totalMoves++;
 	}
 
 	/**
-	 * Handles click event on canvas normally representing a player turn 
+	 * Handles click event on canvas normally representing a player turn
 	 *
 	 * @param {obj} event
 	 * @returns void
@@ -231,7 +231,7 @@ class Grid {
 			// can also abstract to different method
 			const el = document.getElementById( 'alerts' );
 			el.classList.add( 'success' );
-			el.innerText = 'Player ' + this.latestMove.letter + ' is the winner!';
+			el.innerText = 'Player ' + this.latestMove.letter.toUpperCase() + ' is the winner!';
 		}
 	}
 
@@ -246,9 +246,9 @@ class Grid {
 		const stop  = this.latestMove.x + ( this.winLength - 1 );
 		for ( let i=start; i<stop; i++ ) {
 			if (
-				undefined !== this.boardState[ i ]
-				&& undefined !== this.boardState[ i ][ this.latestMove.y ]
-				&& 'x' === this.boardState[ i ][ this.latestMove.y ]
+				undefined !== this.boardState[ this.latestMove.y ]
+				&& undefined !== this.boardState[ this.latestMove.y ][ i ]
+				&& this.latestMove.letter === this.boardState[ this.latestMove.y ][ i ]
 			) {
 				hCount++;
 			} else {
@@ -272,9 +272,9 @@ class Grid {
 		const stop  = this.latestMove.y + ( this.winLength - 1 );
 		for ( let i=start; i<stop; i++ ) {
 			if (
-				undefined !== this.boardState[ this.latestMove.x ]
-				&& undefined !== this.boardState[ this.latestMove.x ][ i ]
-				&& 'x' === this.boardState[ this.latestMove.x ][ i ]
+				undefined !== this.boardState[ i ]
+				&& undefined !== this.boardState[ i ][ this.latestMove.x ]
+				&& this.latestMove.letter === this.boardState[ i ][ this.latestMove.x ]
 			) {
 				vCount++;
 			} else {
@@ -300,11 +300,10 @@ class Grid {
 		let yDown      = this.latestMove.y - ( this.winLength - 1 );
 		let yUp        = this.latestMove.y + ( this.winLength - 1 );
 		for ( let x=start; x<stop+1; x++ ) {
-
 			if (
-				undefined !== this.boardState[ x ]
-				&& undefined !== this.boardState[ x ][ yDown ]
-				&& 'x' === this.boardState[ x ][ yDown ]
+				undefined !== this.boardState[ yDown ]
+				&& undefined !== this.boardState[ yDown ][ x ]
+				&& this.latestMove.letter === this.boardState[ yDown ][ x ]
 			) {
 				yDownCount++;
 			} else {
@@ -312,9 +311,9 @@ class Grid {
 			}
 
 			if (
-				undefined !== this.boardState[ x ]
-				&& undefined !== this.boardState[ x ][ yUp ]
-				&& 'x' === this.boardState[ x ][ yUp ]
+				undefined !== this.boardState[ yUp ]
+				&& undefined !== this.boardState[ yUp ][ x ]
+				&& this.latestMove.letter === this.boardState[ yUp ][ x ]
 			) {
 				yUpCount++;
 			} else {

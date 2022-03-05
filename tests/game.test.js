@@ -14,41 +14,37 @@ beforeEach( () => {
 			<button id="reset">Start Over</button>
 		</div>`;
 	
-	grid = new Grid();
+	grid = new Grid( 3, 3, 3 );
 	grid.init();
 } );
 
 describe( 'Testing Setup', () => {
 	test( 'grid is instantiated', () => {
-		expect( grid.cellsWide ).toBe( 3 );
+		expect( grid.cellsWide ).toBeDefined();
 	} );
 	
 	test( 'canvas is initialized', () => {
-		expect( grid.canvas.width ).toBe( 480 );
+		expect( grid.canvas.width ).toBeDefined();
 	} );
 } );
 
 describe( 'Game Procedures', () => {
-	test( 'moves register correctly', () => {		
-		let event = { clientX: 300, clientY: 0 };
+	test( 'moves register correctly', () => {
+		const event = { clientX: 300, clientY: 0 };
 		document.getElementById( 'gameCanvas' ).dispatchEvent(
 			new MouseEvent( 'click', { ...event, bubbles: true } )
 		);
-		expect( grid.xMoves[0] ).toEqual( 2 );
+		expect( grid.latestMove ).toEqual( { x: 1, y: 0, letter: 'x' } );
+		expect( grid.boardState[ 0 ][ 1 ] ).toBe( 'x' );
 	} );
 
 	test( 'players take turns', () => {
-		let event = { clientX: 300, clientY: 0 };
+		grid.latestMove = { x: 1, y: 0, letter: 'x' };
+		const event = { clientX: 300, clientY: 300 };
 		document.getElementById( 'gameCanvas' ).dispatchEvent(
 			new MouseEvent( 'click', { ...event, bubbles: true } )
 		);
-
-		event = { clientX: 300, clientY: 300 };
-		document.getElementById( 'gameCanvas' ).dispatchEvent(
-			new MouseEvent( 'click', { ...event, bubbles: true } )
-		);
-		expect( grid.xMoves.length ).toEqual( 1 );
-		expect( grid.oMoves.length ).toEqual( 1 );
+		expect( grid.latestMove ).toEqual( { x: 1, y: 1, letter: 'o' } );
 	} );
 
 	test( 'cell only claimable once', () => {
@@ -56,58 +52,73 @@ describe( 'Game Procedures', () => {
 		document.getElementById( 'gameCanvas' ).dispatchEvent(
 			new MouseEvent( 'click', { ...event, bubbles: true } )
 		);
-
 		document.getElementById( 'gameCanvas' ).dispatchEvent(
 			new MouseEvent( 'click', { ...event, bubbles: true } )
 		);
-		expect( grid.xMoves.length ).toEqual( 1 );
-		expect( grid.oMoves.length ).toEqual( 0 );
+		expect( grid.latestMove ).toEqual( { x: 1, y: 0, letter: 'x' } );
 	} );
 } );
 
 describe( 'Game Outcomes', () => {
-	test( 'game can end', () => {		
-		grid.xMoves = [ 1, 2, 5, 8, 7 ];
-		grid.oMoves = [ 3, 4, 6, 9 ];
-		expect( grid.isGameOver ).toEqual( false );
+	test( 'game can end in a draw', () => {
+		grid.boardState = new Array(
+			[ 'x', 'x', 'o' ],
+			[ 'o', 'x', 'x' ],
+			[ 'x', 'o', 'o' ]
+		);
+		grid.totalMoves = 9;
+		grid.latestMove = { 'x': 0, 'y': 2, 'letter': 'x' };
 		grid.checkGameEnd();
-		expect( grid.isGameOver ).toEqual( true );
-	} );
-
-	test( 'game can end in a draw', () => {		
-		grid.xMoves = [ 1, 2, 5, 8, 7 ];
-		grid.oMoves = [ 3, 4, 6, 9 ];
-		grid.checkGameEnd();
-		expect( grid.isGameOver ).toEqual( true );
+		expect( grid.isGameOver ).toBe( true );
 		const el = document.getElementById( 'alerts' );
-		expect( el.innerText ).toEqual( 'The game ended in a draw...' );
+		expect( el.innerText ).toBe( 'The game ended in a draw...' );
 	} );
 
 	test( 'X can win', () => {
-		grid.xMoves = [ 1, 2, 3 ];
-		grid.oMoves = [ 4, 7 ];
+		grid.boardState = new Array(
+			[ 'x', 'o' ],
+			[ 'x', 'o' ],
+			[ 'x' ]
+		);
+		grid.totalMoves = 5;
+		grid.latestMove = { 'x': 0, 'y': 2, 'letter': 'x' };
+		expect( grid.isGameOver ).toBe( false );
 		grid.checkGameEnd();
+		expect( grid.isGameOver ).toBe( true );
 		const el = document.getElementById( 'alerts' );
-		expect( el.innerText ).toEqual( 'Player X is the winner!' );
+		expect( el.innerText ).toBe( 'Player X is the winner!' );
 	} );
 
 	test( 'O can win', () => {
-		grid.xMoves = [ 4, 6, 9 ];
-		grid.oMoves = [ 1, 2, 3 ];
+		grid.boardState = new Array(
+			[ 'x', 'o', 'x' ],
+			[ 'x', 'o', 'x' ],
+			[ 'o', 'o' ]
+		);
+		grid.totalMoves = 8;
+		grid.latestMove = { 'x': 1, 'y': 2, 'letter': 'o' };
+		expect( grid.isGameOver ).toBe( false );
 		grid.checkGameEnd();
+		expect( grid.isGameOver ).toBe( true );
 		const el = document.getElementById( 'alerts' );
-		expect( el.innerText ).toEqual( 'Player O is the winner!' );
+		expect( el.innerText ).toBe( 'Player O is the winner!' );
 	} );
 
 	test( 'game stops after win or draw', () => {
-		grid.xMoves = [ 1, 2, 3 ];
-		grid.oMoves = [ 4, 7 ];
+		grid.boardState = new Array(
+			[ 'x', 'x', 'o' ],
+			[ 'o', 'x', 'x' ],
+			[ 'x', 'o', 'o' ]
+		);
+		grid.totalMoves = 9;
+		grid.latestMove = { 'x': 0, 'y': 2, 'letter': 'x' };
 		grid.checkGameEnd();
+		expect( grid.isGameOver ).toBe( true );
 		let event = { clientX: 300, clientY: 0 };
 		document.getElementById( 'gameCanvas' ).dispatchEvent(
 			new MouseEvent( 'click', { ...event, bubbles: true } )
 		);
 		const el = document.getElementById( 'alerts' );
-		expect( el.innerText ).toEqual( 'Game is over!' );
+		expect( el.innerText ).toBe( 'Game is over!' );
 	} );
 } );
