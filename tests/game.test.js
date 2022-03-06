@@ -26,6 +26,21 @@ describe( 'Testing Setup', () => {
 	test( 'canvas is initialized', () => {
 		expect( grid.canvas.width ).toBeDefined();
 	} );
+
+	test( 'init resets the game', () => {
+		grid.boardState = new Array(
+			[ 'x', 'x', 'o' ],
+			[ 'o', 'x', 'x' ],
+			[ 'x', 'o', 'o' ]
+		);
+		grid.totalMoves = 9;
+		grid.latestMove = { 'x': 0, 'y': 2, 'letter': 'x' };
+		grid.checkGameEnd();
+		grid.init();
+		expect( grid.totalMoves ).toBe( 0 );
+		expect( grid.boardState ).toEqual( [] );
+		expect( grid.latestMove ).toBe( undefined );
+	} );
 } );
 
 describe( 'Game Procedures', () => {

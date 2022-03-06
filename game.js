@@ -13,6 +13,8 @@ class Grid {
 		this.cellsWide = cellsWide ? cellsWide : 3;
 		this.cellsTall = cellsTall ? cellsTall : 3;
 		this.winLength = winLength ? winLength : 3;
+		this.canvas    = document.getElementById( 'gameCanvas' );
+		this.cellSize  = Math.round( this.canvas.width / this.cellsWide ) * window.devicePixelRatio;
 	}
 
 	/**
@@ -20,16 +22,14 @@ class Grid {
 	 */
 	init() {
 		// Set our config variables
-		this.canvas              = document.getElementById( 'gameCanvas' );
-		this.cellSize            = Math.round( this.canvas.width / this.cellsWide ) * window.devicePixelRatio;
 		this.canvas.width        = this.cellSize * this.cellsWide;
 		this.canvas.height       = this.cellSize * this.cellsTall;
 		this.canvas.style.width  = '480px';
 		this.canvas.style.height = '480px';
 
 		this.ctx                       = this.canvas.getContext( '2d' );
-		this.ctx.imageSmoothingEnabled = false;
 		this.ctx.lineWidth             = 10;
+		this.ctx.imageSmoothingEnabled = false;
 		
 		// Register the onclick event
 		this.canvas.onclick = ( e ) => this.onClick( e );
