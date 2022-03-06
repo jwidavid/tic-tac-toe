@@ -2,13 +2,19 @@ let grid;
 
 class Grid {
 
-	constructor( tileSize ) {
-		this.canvas    = undefined;
-		this.ctx       = undefined;
-		this.tileSize  = tileSize ? tileSize * window.devicePixelRatio : 160 * window.devicePixelRatio;
-		this.cellsWide = 3;
-		this.cellsTall = 3;
-		this.winLength = 3;
+	/**
+	 * Game grid constructor with game setting arguments
+	 *
+	 * @param {num} cellsWide
+	 * @param {num} cellsTall
+	 * @param {num} winLength
+	 */
+	constructor( cellsWide, cellsTall, winLength ) {
+		this.cellsWide = cellsWide ? cellsWide : 3;
+		this.cellsTall = cellsTall ? cellsTall : 3;
+		this.winLength = winLength ? winLength : 3;
+		this.canvas    = document.getElementById( 'gameCanvas' );
+		this.cellSize  = Math.round( this.canvas.width / this.cellsWide ) * window.devicePixelRatio;
 	}
 
 	/**
@@ -16,34 +22,27 @@ class Grid {
 	 */
 	init() {
 		// Set our config variables
-		this.canvas              = document.getElementById( 'gameCanvas' );
-		this.canvas.width        = this.tileSize * this.cellsWide;
-		this.canvas.height       = this.tileSize * this.cellsTall;
+		this.canvas.width        = this.cellSize * this.cellsWide;
+		this.canvas.height       = this.cellSize * this.cellsTall;
 		this.canvas.style.width  = '480px';
 		this.canvas.style.height = '480px';
 
 		this.ctx                       = this.canvas.getContext( '2d' );
-		this.ctx.imageSmoothingEnabled = false;
 		this.ctx.lineWidth             = 10;
+		this.ctx.imageSmoothingEnabled = false;
 		
 		// Register the onclick event
 		this.canvas.onclick = ( e ) => this.onClick( e );
 
 		this.createGrid();
 
-		this.isGameOver    = false;
-		this.winConditions = new Array(
-			[ 1, 2, 3 ],
-			[ 4, 5, 6 ],
-			[ 7, 8, 9 ],
-			[ 1, 4, 7 ],
-			[ 2, 5, 8 ],
-			[ 3, 6, 9 ],
-			[ 1, 5, 9 ],
-			[ 3, 5, 7 ],	
-		);
-		this.xMoves = new Array();
-		this.oMoves = new Array();
+		/**
+		 * boardState[ yPos ] = [ xPos ] = letter
+		 */
+		this.boardState = new Array();
+		this.isGameOver = false;
+		this.latestMove = undefined;
+		this.totalMoves = 0;
 	}
 
 	/**
@@ -51,9 +50,9 @@ class Grid {
 	 */
 	createGrid() {
 		// our end points
-		const width = this.canvas.width;
+		const width  = this.canvas.width;
 		const height = this.canvas.height;
-	
+
 		// set our styles
 		this.ctx.save();
 		this.ctx.strokeStyle = 'black'; // line colors
@@ -64,14 +63,14 @@ class Grid {
 
 		// Draw horizontal lines
 		for ( let x=1; x<this.cellsWide; x++ ) {
-			this.ctx.moveTo( 0, this.tileSize * x );
-			this.ctx.lineTo( width, this.tileSize * x );
+			this.ctx.moveTo( 0, this.cellSize * x );
+			this.ctx.lineTo( width, this.cellSize * x );
 		}
 
 		// Draw vertical lines
 		for ( let y=1; y<this.cellsTall; y++ ) {
-			this.ctx.moveTo( this.tileSize * y, 0 );
-			this.ctx.lineTo( this.tileSize * y, height );
+			this.ctx.moveTo( this.cellSize * y, 0 );
+			this.ctx.lineTo( this.cellSize * y, height );
 		}
 
 		this.ctx.stroke();
@@ -86,9 +85,9 @@ class Grid {
 	 * @param {*} cellY
 	 */
 	drawO( cellX, cellY ) {
-		const midX = ( cellX * this.tileSize ) + ( this.tileSize / 2 );
-		const midY = ( cellY * this.tileSize ) + ( this.tileSize / 2 );
-		const radius = this.tileSize / 2.5;
+		const midX = ( cellX * this.cellSize ) + ( this.cellSize / 2 );
+		const midY = ( cellY * this.cellSize ) + ( this.cellSize / 2 );
+		const radius = this.cellSize / 2.5;
 		this.ctx.beginPath();
 		this.ctx.arc( midX, midY, radius, 0, 2 * Math.PI, false );
 		this.ctx.stroke();
@@ -101,14 +100,14 @@ class Grid {
 	 * @param {num} cellY
 	 */
 	drawX( cellX, cellY ) {
-		const x = cellX * this.tileSize;
-		const y = cellY * this.tileSize;
-		const offset = this.tileSize / 10;
+		const x = cellX * this.cellSize;
+		const y = cellY * this.cellSize;
+		const offset = this.cellSize / 10;
 		this.ctx.beginPath();
 		this.ctx.moveTo( x + offset, y + offset );
-		this.ctx.lineTo( x + this.tileSize - offset, y + this.tileSize - offset );
-		this.ctx.moveTo( x + offset, y + this.tileSize - offset );
-		this.ctx.lineTo( x + this.tileSize - offset, y + offset );
+		this.ctx.lineTo( x + this.cellSize - offset, y + this.cellSize - offset );
+		this.ctx.moveTo( x + offset, y + this.cellSize - offset );
+		this.ctx.lineTo( x + this.cellSize - offset, y + offset );
 		this.ctx.stroke();
 	}
 
@@ -127,52 +126,48 @@ class Grid {
 	}
 
 	/**
-	 * Retrieves coordinates and ID for selected cell
+	 * Retrieves coordinates for selected cell
 	 * 
 	 * @param {obj} event
 	 * @returns object
 	 */
-	getCellData( event ) {
+	getCellCoords( event ) {
 		const cursor = this.getCursorCoords( event );
-		const cellX  = Math.floor( cursor.x / this.tileSize );
-		const cellY  = Math.floor( cursor.y / this.tileSize );
-		const cellId = ( cellY * 3 ) + cellX + 1;
+		const posX = Math.floor( cursor.x / this.cellSize );
+		const posY = Math.floor( cursor.y / this.cellSize );
 
-		return { 'posX': cellX, 'posY': cellY, 'id': cellId };
-	}
-
-	/**
-	 * Retrieves information for the player that last moved
-	 *
-	 * @returns object
-	 */
-	getPlayerByLastMove() {
-		const player = {
-			moves: new Array(),
-			letter: '',
-		};
-		if ( this.xMoves.length > this.oMoves.length ) {
-			player.moves = this.xMoves;
-			player.letter = 'X';
-		} else {
-			player.moves = this.oMoves;
-			player.letter = 'O';
-		}
-		return player;
+		return { x: posX, y: posY };
 	}
 
 	/**
 	 * Checks if the cell is empty or contains
 	 *
-	 * @param {num} cellId
+	 * @param {num} xPos 
+	 * @param {num} yPos 
 	 * @returns boolean
 	 */
-	isCellEmpty( cellId ) {
-		return ! this.xMoves.includes( cellId ) && ! this.oMoves.includes( cellId );
+	isCellEmpty( xPos, yPos ) {
+		return !! this.boardState[ yPos ] && this.boardState[ yPos ][ xPos ];
 	}
 
 	/**
-	 * Handles click event on canvas normally representing a player turn 
+	 * Records the move to the boardState
+	 * 
+	 * @param {num} xPos
+	 * @param {num} yPos
+	 * @param {num} letter
+	 */
+	registerMove( xPos, yPos, letter ) {
+		if ( undefined === this.boardState[ yPos ] ) {
+			this.boardState[ yPos ] = new Array();
+		}
+		this.boardState[ yPos ][ xPos ] = letter;
+		this.latestMove = { 'x': xPos, 'y': yPos, 'letter': letter };
+		this.totalMoves++;
+	}
+
+	/**
+	 * Handles click event on canvas normally representing a player turn
 	 *
 	 * @param {obj} event
 	 * @returns void
@@ -185,21 +180,21 @@ class Grid {
 			return;
 		}
 
-		// Which cell was clicked on?
-		const cellData = this.getCellData( event );
+		// Which square was clicked on?
+		const coords = this.getCellCoords( event );
 
 		// Check if this position is already taken
-		if ( ! this.isCellEmpty( cellData.id ) ) {
+		if ( this.isCellEmpty( coords.x, coords.y ) ) {
 			return;
 		}
-		
+
 		// Determine turn be previous turn and make a move
-		if ( this.xMoves.length <= this.oMoves.length ) {
-			this.drawX( cellData.posX, cellData.posY );
-			this.xMoves.push( cellData.id );
+		if ( undefined === this.latestMove || 'o' === this.latestMove.letter ) {
+			this.drawX( coords.x, coords.y );
+			this.registerMove( coords.x, coords.y, 'x' );
 		} else {
-			this.drawO( cellData.posX, cellData.posY );
-			this.oMoves.push( cellData.id );
+			this.drawO( coords.x, coords.y );
+			this.registerMove( coords.x, coords.y, 'o' );
 		}
 
 		// Check if 'end game' conditions have been met
@@ -213,9 +208,9 @@ class Grid {
 	 */
 	checkGameEnd() {
 		// Don't waste time checking for endgame if too few moves have occurred
-		if ( ( this.xMoves.length + this.oMoves.length ) < ( this.winLength * 2 ) - 1 ) {
+		if ( this.totalMoves < ( this.winLength * 2 ) - 1 ) {
 			return;
-		} else if ( ( this.xMoves.length + this.oMoves.length ) >= this.cellsWide * this.cellsWide ) {
+		} else if ( this.totalMoves >= this.cellsWide * this.cellsTall ) {
 			// draw game
 			this.isGameOver = true;
 			const el = document.getElementById( 'alerts' );
@@ -224,22 +219,114 @@ class Grid {
 			return;
 		}
 
-		const player = this.getPlayerByLastMove();
+		// I am starting with a check all the way from the left and moving toward the latest move...
+		// if I began moving outward from the latestMove instead, then this would be more efficient
+		this.isGameOver = this.checkHorizontal();
+		if ( ! this.isGameOver ) this.isGameOver = this.checkVertical();
+		if ( ! this.isGameOver ) this.isGameOver = this.checkDiagonal();
 
-		for ( let i=0; i<this.winConditions.length; i++ ) {
-			this.isGameOver = this.winConditions[ i ].every( v => player.moves.includes( v ) );
-			if ( this.isGameOver ) {
-				break;
-			}
-		}
 		// How does this class know where to put the alerts? Should be in config?
-		if (  this.isGameOver ) {
+		if ( this.isGameOver ) {
 			// This can probably be abstracted to a boolean method since it's used in several places
 			// can also abstract to different method
 			const el = document.getElementById( 'alerts' );
 			el.classList.add( 'success' );
-			el.innerText = 'Player ' + player.letter + ' is the winner!';
+			el.innerText = 'Player ' + this.latestMove.letter.toUpperCase() + ' is the winner!';
 		}
+	}
+
+	/**
+	 * Checks for horizontal win condition on latest move
+	 *
+	 * @returns boolean
+	 */
+	checkHorizontal() {
+		let hCount  = 0;
+		const start = this.latestMove.x - ( this.winLength - 1 );
+		const stop  = this.latestMove.x + ( this.winLength - 1 );
+		for ( let i=start; i<stop; i++ ) {
+			if (
+				undefined !== this.boardState[ this.latestMove.y ]
+				&& undefined !== this.boardState[ this.latestMove.y ][ i ]
+				&& this.latestMove.letter === this.boardState[ this.latestMove.y ][ i ]
+			) {
+				hCount++;
+			} else {
+				hCount = 0;
+			}
+			if ( hCount >= this.winLength ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks for vertical win condition on latest move
+	 *
+	 * @returns boolean
+	 */
+	checkVertical() {
+		let vCount   = 0;
+		const start = this.latestMove.y - ( this.winLength - 1 );
+		const stop  = this.latestMove.y + ( this.winLength - 1 );
+		for ( let i=start; i<stop; i++ ) {
+			if (
+				undefined !== this.boardState[ i ]
+				&& undefined !== this.boardState[ i ][ this.latestMove.x ]
+				&& this.latestMove.letter === this.boardState[ i ][ this.latestMove.x ]
+			) {
+				vCount++;
+			} else {
+				vCount = 0;
+			}
+			if ( vCount >= this.winLength ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks for diagonal win condition on latest move
+	 *
+	 * @returns boolean
+	 */
+	checkDiagonal() {
+		let start      = this.latestMove.x - ( this.winLength - 1 );
+		let stop       = this.latestMove.x + ( this.winLength - 1 );
+		let yDownCount = 0;
+		let yUpCount   = 0;
+		let yDown      = this.latestMove.y - ( this.winLength - 1 );
+		let yUp        = this.latestMove.y + ( this.winLength - 1 );
+		for ( let x=start; x<stop+1; x++ ) {
+			if (
+				undefined !== this.boardState[ yDown ]
+				&& undefined !== this.boardState[ yDown ][ x ]
+				&& this.latestMove.letter === this.boardState[ yDown ][ x ]
+			) {
+				yDownCount++;
+			} else {
+				yDownCount = 0;
+			}
+
+			if (
+				undefined !== this.boardState[ yUp ]
+				&& undefined !== this.boardState[ yUp ][ x ]
+				&& this.latestMove.letter === this.boardState[ yUp ][ x ]
+			) {
+				yUpCount++;
+			} else {
+				yUpCount = 0;
+			}
+
+			if ( yDownCount >= this.winLength || yUpCount >= this.winLength ) {
+				return true;
+			}
+			yDown++;
+			yUp--;
+		}
+		return false;
 	}
 }
 
